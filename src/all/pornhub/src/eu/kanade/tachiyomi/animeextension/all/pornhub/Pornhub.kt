@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.animeextension.all.pornhub
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
@@ -52,8 +51,6 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
         anime.title = element.select("div.wrap div.thumbnail-info-wrapper.clearfix span.title a").text()
         anime.thumbnail_url = element.select("div.wrap div.phimage a img").attr("data-thumb_url")
-
-        Log.i("bruh", "${element.select("div.wrap div.phimage a img")}")
         return anime
     }
 
@@ -79,7 +76,6 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun episodeFromElement(element: Element) = throw Exception("not used")
 
     override fun videoListParse(response: Response): List<Video> {
-        Log.i("bruh", "aaaa")
         val url = response.request.url.toString()
         val videoList = mutableListOf<Video>()
         // credits to: https://github.com/Joel2B
