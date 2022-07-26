@@ -77,9 +77,9 @@ class Xvideos : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         val hlsQuality = sourcesJson.substringAfter("setVideoHLS('").substringBefore("')")
         val highQuality = sourcesJson.substringAfter("VideoUrlHigh('").substringBefore("')")
         return listOf(
-            Video(lowQuality, "Low", lowQuality, null),
-            Video(hlsQuality, "HLS", hlsQuality, null),
-            Video(highQuality, "High", highQuality, null)
+            Video(lowQuality, "Low", lowQuality),
+            Video(hlsQuality, "HLS", hlsQuality),
+            Video(highQuality, "High", highQuality)
         )
     }
 

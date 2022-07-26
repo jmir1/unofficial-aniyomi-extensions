@@ -89,16 +89,16 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         val url240 = jsonUrls["240p"].toString().replace("amp;", "")
 
         if (jsonUrls["1080p"] != "") {
-            videoList.add(Video(url1080, "1080p", url1080, null))
+            videoList.add(Video(url1080, "1080p", url1080))
         }
         if (jsonUrls["720p"] != "") {
-            videoList.add(Video(url720, "720p", url720, null))
+            videoList.add(Video(url720, "720p", url720))
         }
         if (jsonUrls["480p"] != "") {
-            videoList.add(Video(url480, "480p", url480, null))
+            videoList.add(Video(url480, "480p", url480))
         }
         if (jsonUrls["240p"] != "") {
-            videoList.add(Video(url240, "240p", url240, null))
+            videoList.add(Video(url240, "240p", url240))
         }
 
         return videoList
