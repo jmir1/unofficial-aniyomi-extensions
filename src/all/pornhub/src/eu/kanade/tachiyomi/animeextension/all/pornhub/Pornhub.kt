@@ -12,6 +12,11 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -21,6 +26,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.lang.Exception
 
 class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
@@ -34,6 +40,8 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override val supportsLatest = false
 
     override val client: OkHttpClient = network.cloudflareClient
+
+    private val json: Json by injectLazy()
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -59,8 +67,6 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun episodeListParse(response: Response): List<SEpisode> {
         val episodes = mutableListOf<SEpisode>()
 
-        val jsoup = response.asJsoup()
-
         val episode = SEpisode.create().apply {
             name = "Video"
             date_upload = System.currentTimeMillis()
@@ -75,33 +81,24 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun episodeFromElement(element: Element) = throw Exception("not used")
 
+    @OptIn(ExperimentalSerializationApi::class)
     override fun videoListParse(response: Response): List<Video> {
         val url = response.request.url.toString()
         val videoList = mutableListOf<Video>()
         // credits to: https://github.com/Joel2B
-        val document = Jsoup.connect("https://appsdev.cyou/xv-ph-rt/api/?data=$url").ignoreContentType(true).get()
-        val jsonObject = JSONObject(document.select("body").text())["hls"]
-        val jsonUrls = JSONObject(jsonObject.toString())
+        val document = client.newCall(GET("https://appsdev.cyou/xv-ph-rt/api/?data=$url")).execute().asJsoup().body().text()
+        val jsonResponse = json.decodeFromString<PornApiResponse>(document)
 
-        val url1080 = jsonUrls["1080p"].toString().replace("amp;", "")
-        val url720 = jsonUrls["720p"].toString().replace("amp;", "")
-        val url480 = jsonUrls["480p"].toString().replace("amp;", "")
-        val url240 = jsonUrls["240p"].toString().replace("amp;", "")
-
-        if (jsonUrls["1080p"] != "") {
-            videoList.add(Video(url1080, "1080p", url1080))
-        }
-        if (jsonUrls["720p"] != "") {
-            videoList.add(Video(url720, "720p", url720))
-        }
-        if (jsonUrls["480p"] != "") {
-            videoList.add(Video(url480, "480p", url480))
-        }
-        if (jsonUrls["240p"] != "") {
-            videoList.add(Video(url240, "240p", url240))
-        }
-
-        return videoList
+        return listOf(
+            Video(jsonResponse.hls!!.all!!,"HLS: ALL",jsonResponse.hls!!.all),
+            Video(jsonResponse.hls!!.low!!,"HLS: LOW",jsonResponse.hls!!.low),
+            Video(jsonResponse.hls!!.hd!!,"HLS: HD",jsonResponse.hls!!.hd),
+            Video(jsonResponse.hls!!.fhd!!,"HLS: FHD",jsonResponse.hls!!.fhd),
+            Video(jsonResponse.mp4!!.low!!,"MP4: LOW",jsonResponse.mp4!!.low),
+            Video(jsonResponse.mp4!!.sd!!,"MP4: SD",jsonResponse.mp4!!.sd),
+            Video(jsonResponse.mp4!!.hd!!,"MP4: HD",jsonResponse.mp4!!.hd),
+            Video(jsonResponse.mp4!!.fhd!!,"MP4: FHD",jsonResponse.mp4!!.fhd)
+        ).filter { it.url.isNotBlank() }
     }
 
     override fun videoListSelector() = throw Exception("not used")
@@ -131,9 +128,7 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
         return GET("$baseUrl/video/search?search=$query&page=$page", headers)
     }
-    override fun searchAnimeFromElement(element: Element): SAnime {
-        return popularAnimeFromElement(element)
-    }
+    override fun searchAnimeFromElement(element: Element): SAnime = popularAnimeFromElement(element)
 
     override fun searchAnimeNextPageSelector(): String = popularAnimeNextPageSelector()
 
@@ -175,4 +170,33 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         }
         screen.addPreference(videoQualityPref)
     }
+
+    @Serializable
+    data class PornApiResponse (
+        var hls        : Hls?    = Hls(),
+        var mp4        : Mp4?    = Mp4(),
+        var thumb      : String? = null,
+        var thumbnails : String? = null
+
+    )
+
+    @Serializable
+    data class Hls (
+        var all   : String? = "",
+        @SerialName("1080p" ) var fhd : String? = "",
+        @SerialName("720p"  ) var hd  : String? = "",
+        @SerialName("480p"  ) var sd  : String? = "",
+        @SerialName("240p"  ) var low  : String? = ""
+
+    )
+
+    @Serializable
+    data class Mp4 (
+    @SerialName("1080p" ) var fhd : String? = "",
+    @SerialName("720p"  ) var hd  : String? = "",
+    @SerialName("480p"  ) var sd  : String? = "",
+    @SerialName("240p"  ) var low  : String? = ""
+    )
+
+
 }
