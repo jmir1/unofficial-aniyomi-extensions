@@ -3,12 +3,11 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlinx-serialization'
 
 ext {
-    extName = 'Pornhub'
-    pkgNameSuffix = 'all.pornhub'
-    extClass = '.Pornhub'
-    extVersionCode = 4
+    extName = 'Twitch'
+    pkgNameSuffix = 'all.twitch'
+    extClass = '.Twitch'
+    extVersionCode = 1
     libVersion = '13'
-    containsNsfw = true
 }
 
 apply from: "$rootDir/common.gradle"

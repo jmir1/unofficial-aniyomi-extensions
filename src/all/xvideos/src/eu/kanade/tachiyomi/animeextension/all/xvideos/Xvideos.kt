@@ -40,7 +40,7 @@ class Xvideos : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun popularAnimeSelector(): String = "div#main div#content div.mozaique.cust-nb-cols > div"
 
-    override fun popularAnimeRequest(page: Int): Request = GET("https://www.xvideos.com/new/$page")
+    override fun popularAnimeRequest(page: Int): Request = GET("$baseUrl/new/$page")
 
     override fun popularAnimeFromElement(element: Element): SAnime {
         val anime = SAnime.create()
@@ -58,7 +58,7 @@ class Xvideos : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         val episodes = mutableListOf<SEpisode>()
         val episode = SEpisode.create().apply {
             name = "Video"
-            url = response.request.url.toString().replace("https://www.xvideos.com", "")
+            setUrlWithoutDomain(response.request.url.toString())
             date_upload = System.currentTimeMillis()
         }
         episodes.add(episode)
@@ -90,7 +90,7 @@ class Xvideos : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun videoFromElement(element: Element) = throw Exception("not used")
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString("preferred_quality", "High")
+        val quality = preferences.getString("preferred_quality", "HLS")
         if (quality != null) {
             val newList = mutableListOf<Video>()
             var preferred = 0
@@ -108,10 +108,11 @@ class Xvideos : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     }
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
-
+        val tagFilter = filters.find{it is Tags} as Tags
         return when {
             query.isNotBlank() -> GET("$baseUrl/?k=$query&p=$page", headers)
-            else -> GET("$baseUrl/tags/${getSearchParameters(filters)}/$page ")
+            tagFilter.state.isNotBlank() -> GET("$baseUrl/tags/${tagFilter.state}/$page ")
+            else -> GET("$baseUrl/new/$page", headers)
         }
     }
     override fun searchAnimeFromElement(element: Element): SAnime {
@@ -141,26 +142,10 @@ class Xvideos : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun getFilterList(): AnimeFilterList = AnimeFilterList(
         AnimeFilter.Header("Search by text does not affect the filter"),
-        Tags("", "Tag")
+        Tags("Tag")
     )
 
-    private fun getSearchParameters(filters: AnimeFilterList): String {
-        var finalstring = ""
-        var tags = ""
-
-        filters.forEach { filter ->
-            when (filter) {
-                is Tags -> {
-                    tags = filter.state.ifEmpty { "" }
-                }
-                else -> {}
-            }
-            finalstring += tags
-        }
-        return finalstring
-    }
-
-    internal class Tags(val input: String, name: String) : AnimeFilter.Text(name)
+    internal class Tags(name: String) : AnimeFilter.Text(name)
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
         val videoQualityPref = ListPreference(screen.context).apply {
