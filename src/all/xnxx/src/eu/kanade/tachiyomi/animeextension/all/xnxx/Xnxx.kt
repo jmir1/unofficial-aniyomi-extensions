@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.animeextension.all.xnxx
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
@@ -108,9 +107,6 @@ class Xnxx : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
         val tagFilter = filters.find { it is Tags } as Tags
         val calPage = page - 1
-        Log.i("bruh page", calPage?.toString())
-        Log.i("bruh query", "$baseUrl/search/$query/$calPage")
-        Log.i("bruh tag", "$baseUrl/search/${tagFilter?.name}/$calPage")
         return when {
             query.isNotBlank() -> GET("$baseUrl/search/$query/$calPage", headers)
             tagFilter.state.isNotBlank() -> GET("$baseUrl/search/${tagFilter.state}/$calPage")

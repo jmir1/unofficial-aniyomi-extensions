@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.animeextension.es.ennovelas
 
 import android.app.Application
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
@@ -13,7 +12,6 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
-import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -21,8 +19,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import java.lang.Exception
+import java.text.Normalizer
 
 class EnNovelas : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
@@ -35,8 +33,6 @@ class EnNovelas : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override val supportsLatest = false
 
     override val client: OkHttpClient = network.cloudflareClient
-
-    private val json: Json by injectLazy()
 
     private val preferences: SharedPreferences by lazy {
         Injekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
@@ -66,7 +62,6 @@ class EnNovelas : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun episodeListParse(response: Response): List<SEpisode> {
         val document = response.asJsoup()
         val episodeList = mutableListOf<SEpisode>()
-        var hasNextButton = document.select("#content > div.paging > a:last-child").any()
         document.select("#col3 div.videobox").forEach { element ->
             val ep = SEpisode.create()
             val noEpisode = getNumberFromEpsString(
@@ -142,18 +137,29 @@ class EnNovelas : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun searchAnimeSelector(): String = popularAnimeSelector()
 
     override fun animeDetailsParse(document: Document): SAnime {
+        val descriptionElement = document.selectFirst("#inwg").text()
+            .substringAfter("Notifications:")
+            .substringBefore("Capitulo")
+            .substringBefore("Capítulo")
         val anime = SAnime.create()
         val title = document.selectFirst("#inwg h3 span.first-word").text()
-        Log.i("bruh title", title)
+        val idx = idxDescription(descriptionElement, title)
+        val description = descriptionElement.substring(0, idx).trim()
+
         anime.title = title.trim()
-        anime.description = document.selectFirst("#inwg").text()
-            .substringAfter("Notifications: ")
-            .substringBefore(title.trim())
-            .substringBefore("Capitulo")
-            .trim()
+        anime.description = description.ifEmpty { title }
         anime.genre = "novela"
         anime.status = SAnime.UNKNOWN
         return anime
+    }
+
+    private fun String.removeNonSpacingMarks() = Normalizer.normalize(this, Normalizer.Form.NFD).replace("\\p{Mn}+".toRegex(), "")
+
+    private fun idxDescription(text: String, title: String): Int {
+        val descriptionLowercase = text.lowercase().removeNonSpacingMarks()
+        val titleLowercase = title.lowercase().removeNonSpacingMarks()
+        val idx = descriptionLowercase.lastIndexOf(titleLowercase)
+        return if (idx == -1) descriptionLowercase.length - 1 else idx
     }
 
     override fun latestUpdatesNextPageSelector() = popularAnimeNextPageSelector()
@@ -168,8 +174,8 @@ class EnNovelas : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         val videoQualityPref = ListPreference(screen.context).apply {
             key = "preferred_quality"
             title = "Preferred quality"
-            entries = arrayOf("720p", "1080p", "480p")
-            entryValues = arrayOf("720p", "1080p", "480p")
+            entries = arrayOf("1080p", "720p", "480p")
+            entryValues = arrayOf("1080p", "720p", "480p")
             setDefaultValue("720p")
             summary = "%s"
 
