@@ -18,6 +18,15 @@
     "nsfw": 0
   },
   {
+    "name": "Aniyomi: Xnxx",
+    "pkg": "eu.kanade.tachiyomi.animeextension.all.xnxx",
+    "apk": "aniyomi-all.xnxx-v13.1.apk",
+    "lang": "all",
+    "code": 1,
+    "version": "13.1",
+    "nsfw": 1
+  },
+  {
     "name": "Aniyomi: Xvideos",
     "pkg": "eu.kanade.tachiyomi.animeextension.all.xvideos",
     "apk": "aniyomi-all.xvideos-v13.3.apk",
@@ -25,5 +34,14 @@
     "code": 3,
     "version": "13.3",
     "nsfw": 1
+  },
+  {
+    "name": "Aniyomi: EnNovelas",
+    "pkg": "eu.kanade.tachiyomi.animeextension.es.ennovelas",
+    "apk": "aniyomi-es.ennovelas-v13.1.apk",
+    "lang": "es",
+    "code": 1,
+    "version": "13.1",
+    "nsfw": 0
   }
 ]
