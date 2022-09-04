@@ -1,0 +1,13 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Xnxx'
+    pkgNameSuffix = 'all.xnxx'
+    extClass = '.Xnxx'
+    extVersionCode = 1
+    libVersion = '13'
+    containsNsfw = true
+}
+
+apply from: "$rootDir/common.gradle"
