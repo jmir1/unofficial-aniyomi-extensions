@@ -36,6 +36,15 @@
     "nsfw": 1
   },
   {
+    "name": "Aniyomi: 2ix2",
+    "pkg": "eu.kanade.tachiyomi.animeextension.de.twoixtwo",
+    "apk": "aniyomi-de.twoixtwo-v13.1.apk",
+    "lang": "de",
+    "code": 1,
+    "version": "13.1",
+    "nsfw": 0
+  },
+  {
     "name": "Aniyomi: EnNovelas",
     "pkg": "eu.kanade.tachiyomi.animeextension.es.ennovelas",
     "apk": "aniyomi-es.ennovelas-v13.1.apk",
