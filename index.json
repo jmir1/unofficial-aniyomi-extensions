@@ -9,6 +9,15 @@
     "nsfw": 1
   },
   {
+    "name": "Aniyomi: Ted",
+    "pkg": "eu.kanade.tachiyomi.animeextension.all.ted",
+    "apk": "aniyomi-all.ted-v13.1.apk",
+    "lang": "all",
+    "code": 1,
+    "version": "13.1",
+    "nsfw": 0
+  },
+  {
     "name": "Aniyomi: Twitch",
     "pkg": "eu.kanade.tachiyomi.animeextension.all.twitch",
     "apk": "aniyomi-all.twitch-v13.1.apk",
