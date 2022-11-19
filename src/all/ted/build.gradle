@@ -6,7 +6,7 @@ ext {
     extName = 'Ted'
     pkgNameSuffix = 'all.ted'
     extClass = '.Ted'
-    extVersionCode = 1
+    extVersionCode = 2
     libVersion = '13'
 }
 
