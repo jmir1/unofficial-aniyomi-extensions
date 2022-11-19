@@ -101,6 +101,7 @@ class Ted : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
                 }
             }
         }
+        if (query.isNotEmpty()) url.addQueryParameter("q", query)
         return GET(url.toString())
     }
 
