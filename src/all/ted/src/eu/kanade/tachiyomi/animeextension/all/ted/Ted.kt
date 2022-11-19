@@ -120,7 +120,7 @@ class Ted : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         return anime
     }
 
-    override fun popularAnimeNextPageSelector(): String = "a.pagination__next.pagination__flipper.pagination__link"
+    override fun popularAnimeNextPageSelector(): String = "a[rel=next]"
 
     override fun episodeListParse(response: Response): List<SEpisode> {
         val document = response.asJsoup().select("script[type=application/json]").toString()
