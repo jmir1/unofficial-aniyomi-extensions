@@ -2,6 +2,10 @@ package eu.kanade.tachiyomi.animeextension.all.pornhub
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.os.Build
+import android.text.Html
+import android.text.SpannableString
+import android.text.Spanned
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
@@ -20,14 +24,12 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
-import java.lang.Exception
+import java.text.SimpleDateFormat
 
 class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
@@ -56,9 +58,10 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         anime.setUrlWithoutDomain(
             "$baseUrl${element.select("div.wrap div.phimage a").attr("href")}"
         )
-
-        anime.title = element.select("div.wrap div.thumbnail-info-wrapper.clearfix span.title a").text()
-        anime.thumbnail_url = element.select("div.wrap div.phimage a img").attr("data-thumb_url")
+        anime.title = fromHtml(element.select("div.wrap div.thumbnail-info-wrapper.clearfix span.title a").text()).toString()
+        anime.thumbnail_url = element.select("div.wrap div.phimage a img").attr("src").ifEmpty {
+            element.select("div.wrap div.phimage a img").attr("data-mediumthumb")
+        }
         return anime
     }
 
@@ -66,11 +69,16 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun episodeListParse(response: Response): List<SEpisode> {
         val episodes = mutableListOf<SEpisode>()
-
-        val episode = SEpisode.create().apply {
-            name = "Video"
-            date_upload = System.currentTimeMillis()
-        }
+        val document = response.asJsoup()
+        val jsonString = document.selectFirst("script[type=\"application/ld+json\"]").data()
+        val jsonData = json.decodeFromString<VideoDetail>(jsonString)
+        val epDate = try {
+            val dateParts = jsonData.uploadDate.toString().split("-")
+            SimpleDateFormat("yyyy-MM-dd").parse("${dateParts[0]}-${dateParts[1]}-${dateParts[2]}")
+        } catch (e: Exception) { null }
+        val episode = SEpisode.create()
+        episode.name = "Video"
+        if (epDate != null) episode.date_upload = epDate.time
         episode.setUrlWithoutDomain(response.request.url.toString())
         episodes.add(episode)
 
@@ -90,14 +98,14 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         val jsonResponse = json.decodeFromString<PornApiResponse>(document)
 
         return listOf(
-            Video(jsonResponse.hls!!.all!!,"HLS: ALL",jsonResponse.hls!!.all),
-            Video(jsonResponse.hls!!.low!!,"HLS: LOW",jsonResponse.hls!!.low),
-            Video(jsonResponse.hls!!.hd!!,"HLS: HD",jsonResponse.hls!!.hd),
-            Video(jsonResponse.hls!!.fhd!!,"HLS: FHD",jsonResponse.hls!!.fhd),
-            Video(jsonResponse.mp4!!.low!!,"MP4: LOW",jsonResponse.mp4!!.low),
-            Video(jsonResponse.mp4!!.sd!!,"MP4: SD",jsonResponse.mp4!!.sd),
-            Video(jsonResponse.mp4!!.hd!!,"MP4: HD",jsonResponse.mp4!!.hd),
-            Video(jsonResponse.mp4!!.fhd!!,"MP4: FHD",jsonResponse.mp4!!.fhd)
+            Video(jsonResponse.hls!!.all!!, "HLS: ALL", jsonResponse.hls!!.all),
+            Video(jsonResponse.hls!!.low!!, "HLS: LOW", jsonResponse.hls!!.low),
+            Video(jsonResponse.hls!!.hd!!, "HLS: HD", jsonResponse.hls!!.hd),
+            Video(jsonResponse.hls!!.fhd!!, "HLS: FHD", jsonResponse.hls!!.fhd),
+            Video(jsonResponse.mp4!!.low!!, "MP4: LOW", jsonResponse.mp4!!.low),
+            Video(jsonResponse.mp4!!.sd!!, "MP4: SD", jsonResponse.mp4!!.sd),
+            Video(jsonResponse.mp4!!.hd!!, "MP4: HD", jsonResponse.mp4!!.hd),
+            Video(jsonResponse.mp4!!.fhd!!, "MP4: FHD", jsonResponse.mp4!!.fhd)
         ).filter { it.url.isNotBlank() }
     }
 
@@ -136,12 +144,22 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun animeDetailsParse(document: Document): SAnime {
         val anime = SAnime.create()
-        anime.title = document.select("div.video-wrapper div.title-container.translate h1.title.translate span.inlineFree").text()
-        anime.author = document.select("div.userInfo div.usernameWrap.clearfix span.usernameBadgesWrapper a.bolded").text()
-        anime.description = "views: " + document.select("div.ratingInfo div.views span.count").text()
+        val jsonString = document.selectFirst("script[type=\"application/ld+json\"]").data()
+        val jsonData = json.decodeFromString<VideoDetail>(jsonString)
+
+        anime.title = fromHtml(jsonData.name.toString()).toString()
+        anime.author = jsonData.author.toString()
+        anime.thumbnail_url = jsonData.thumbnailUrl
+        anime.description = fromHtml(jsonData.description.toString()).toString()
         anime.genre = document.select("div.video-info-row div.categoriesWrapper a.item").joinToString { it.text() }
         anime.status = SAnime.COMPLETED
         return anime
+    }
+
+    private fun fromHtml(html: String?): Spanned? {
+        return if (html == null) SpannableString("")
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY)
+        else Html.fromHtml(html)
     }
 
     override fun latestUpdatesNextPageSelector() = throw Exception("not used")
@@ -172,31 +190,50 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     }
 
     @Serializable
-    data class PornApiResponse (
-        var hls        : Hls?    = Hls(),
-        var mp4        : Mp4?    = Mp4(),
-        var thumb      : String? = null,
-        var thumbnails : String? = null
+    data class PornApiResponse(
+        var hls: Hls? = Hls(),
+        var mp4: Mp4? = Mp4(),
+        var thumb: String? = null,
+        var thumbnails: String? = null
 
     )
 
     @Serializable
-    data class Hls (
-        var all   : String? = "",
-        @SerialName("1080p" ) var fhd : String? = "",
-        @SerialName("720p"  ) var hd  : String? = "",
-        @SerialName("480p"  ) var sd  : String? = "",
-        @SerialName("240p"  ) var low  : String? = ""
+    data class Hls(
+        var all: String? = "",
+        @SerialName("1080p") var fhd: String? = "",
+        @SerialName("720p") var hd: String? = "",
+        @SerialName("480p") var sd: String? = "",
+        @SerialName("240p") var low: String? = ""
 
     )
 
     @Serializable
-    data class Mp4 (
-    @SerialName("1080p" ) var fhd : String? = "",
-    @SerialName("720p"  ) var hd  : String? = "",
-    @SerialName("480p"  ) var sd  : String? = "",
-    @SerialName("240p"  ) var low  : String? = ""
+    data class Mp4(
+        @SerialName("1080p") var fhd: String? = "",
+        @SerialName("720p") var hd: String? = "",
+        @SerialName("480p") var sd: String? = "",
+        @SerialName("240p") var low: String? = ""
     )
 
+    @Serializable
+    data class VideoDetail(
+        @SerialName("@context") var context: String? = null,
+        @SerialName("@type") var type: String? = null,
+        @SerialName("name") var name: String? = null,
+        @SerialName("embedUrl") var embedUrl: String? = null,
+        @SerialName("duration") var duration: String? = null,
+        @SerialName("thumbnailUrl") var thumbnailUrl: String? = null,
+        @SerialName("uploadDate") var uploadDate: String? = null,
+        @SerialName("description") var description: String? = null,
+        @SerialName("author") var author: String? = null,
+        @SerialName("interactionStatistic") var interactionStatistic: ArrayList<InteractionStatistic> = arrayListOf()
+    )
 
+    @Serializable
+    data class InteractionStatistic(
+        @SerialName("@type") var type: String? = null,
+        @SerialName("interactionType") var interactionType: String? = null,
+        @SerialName("userInteractionCount") var userInteractionCount: String? = null
+    )
 }

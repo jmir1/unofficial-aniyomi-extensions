@@ -21,6 +21,8 @@ import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.lang.Exception
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class Xnxx : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
@@ -40,7 +42,11 @@ class Xnxx : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun popularAnimeSelector(): String = "div[id*='video_'].thumb-block"
 
-    override fun popularAnimeRequest(page: Int): Request = GET("$baseUrl/hits/$page")
+    override fun popularAnimeRequest(page: Int): Request {
+        val sdf = SimpleDateFormat("yyyy-MM")
+        val currentDate = sdf.format(Date())
+        return GET("$baseUrl/best/$currentDate/${page - 1}")
+    }
 
     override fun popularAnimeFromElement(element: Element): SAnime {
         val anime = SAnime.create()
@@ -106,11 +112,11 @@ class Xnxx : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
         val tagFilter = filters.find { it is Tags } as Tags
-        val calPage = page - 1
+        val calcPage = page - 1
         return when {
-            query.isNotBlank() -> GET("$baseUrl/search/$query/$calPage", headers)
-            tagFilter.state.isNotBlank() -> GET("$baseUrl/search/${tagFilter.state}/$calPage")
-            else -> popularAnimeRequest(calPage)
+            query.isNotBlank() -> GET("$baseUrl/search/hits/$query/$calcPage", headers)
+            tagFilter.state.isNotBlank() -> GET("$baseUrl/search/hits/${tagFilter.state}/$calcPage")
+            else -> popularAnimeRequest(page)
         }
     }
     override fun searchAnimeFromElement(element: Element): SAnime {
@@ -124,6 +130,7 @@ class Xnxx : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun animeDetailsParse(document: Document): SAnime {
         val anime = SAnime.create()
         anime.title = document.select("#video-content-metadata > div.clear-infobar > strong").text()
+        anime.author = document.select("#video-content-metadata > div.clear-infobar > span > a").text()
         anime.description = document.select("#video-content-metadata > p").text().replace("\n", "")
         anime.genre = document.select("#video-content-metadata > div.metadata-row.video-tags > a").joinToString { it.text() }
         anime.status = SAnime.COMPLETED
