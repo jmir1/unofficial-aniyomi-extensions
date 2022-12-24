@@ -2,19 +2,19 @@
   {
     "name": "Aniyomi: Pornhub",
     "pkg": "eu.kanade.tachiyomi.animeextension.all.pornhub",
-    "apk": "aniyomi-all.pornhub-v13.4.apk",
+    "apk": "aniyomi-all.pornhub-v13.5.apk",
     "lang": "all",
-    "code": 4,
-    "version": "13.4",
+    "code": 5,
+    "version": "13.5",
     "nsfw": 1
   },
   {
     "name": "Aniyomi: Ted",
     "pkg": "eu.kanade.tachiyomi.animeextension.all.ted",
-    "apk": "aniyomi-all.ted-v13.1.apk",
+    "apk": "aniyomi-all.ted-v13.2.apk",
     "lang": "all",
-    "code": 1,
-    "version": "13.1",
+    "code": 2,
+    "version": "13.2",
     "nsfw": 0
   },
   {
@@ -29,10 +29,10 @@
   {
     "name": "Aniyomi: Xnxx",
     "pkg": "eu.kanade.tachiyomi.animeextension.all.xnxx",
-    "apk": "aniyomi-all.xnxx-v13.1.apk",
+    "apk": "aniyomi-all.xnxx-v13.2.apk",
     "lang": "all",
-    "code": 1,
-    "version": "13.1",
+    "code": 2,
+    "version": "13.2",
     "nsfw": 1
   },
   {
@@ -49,15 +49,6 @@
     "pkg": "eu.kanade.tachiyomi.animeextension.de.twoixtwo",
     "apk": "aniyomi-de.twoixtwo-v13.1.apk",
     "lang": "de",
-    "code": 1,
-    "version": "13.1",
-    "nsfw": 0
-  },
-  {
-    "name": "Aniyomi: EnNovelas",
-    "pkg": "eu.kanade.tachiyomi.animeextension.es.ennovelas",
-    "apk": "aniyomi-es.ennovelas-v13.1.apk",
-    "lang": "es",
     "code": 1,
     "version": "13.1",
     "nsfw": 0
