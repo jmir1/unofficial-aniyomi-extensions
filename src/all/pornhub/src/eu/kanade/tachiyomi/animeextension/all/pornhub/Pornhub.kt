@@ -8,6 +8,7 @@ import android.text.SpannableString
 import android.text.Spanned
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
+import eu.kanade.tachiyomi.animeextension.all.pornhub.extractors.PhCdnExtractor
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.SAnime
@@ -92,21 +93,7 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     @OptIn(ExperimentalSerializationApi::class)
     override fun videoListParse(response: Response): List<Video> {
         val url = response.request.url.toString()
-        val videoList = mutableListOf<Video>()
-        // credits to: https://github.com/Joel2B
-        val document = client.newCall(GET("https://appsdev.cyou/xv-ph-rt/api/?data=$url")).execute().asJsoup().body().text()
-        val jsonResponse = json.decodeFromString<PornApiResponse>(document)
-
-        return listOf(
-            Video(jsonResponse.hls!!.all!!, "HLS: ALL", jsonResponse.hls!!.all),
-            Video(jsonResponse.hls!!.low!!, "HLS: LOW", jsonResponse.hls!!.low),
-            Video(jsonResponse.hls!!.hd!!, "HLS: HD", jsonResponse.hls!!.hd),
-            Video(jsonResponse.hls!!.fhd!!, "HLS: FHD", jsonResponse.hls!!.fhd),
-            Video(jsonResponse.mp4!!.low!!, "MP4: LOW", jsonResponse.mp4!!.low),
-            Video(jsonResponse.mp4!!.sd!!, "MP4: SD", jsonResponse.mp4!!.sd),
-            Video(jsonResponse.mp4!!.hd!!, "MP4: HD", jsonResponse.mp4!!.hd),
-            Video(jsonResponse.mp4!!.fhd!!, "MP4: FHD", jsonResponse.mp4!!.fhd)
-        ).filter { it.url.isNotBlank() }
+        return PhCdnExtractor(client).videoFromUrl(url)
     }
 
     override fun videoListSelector() = throw Exception("not used")
@@ -116,7 +103,7 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
     override fun videoFromElement(element: Element) = throw Exception("not used")
 
     override fun List<Video>.sort(): List<Video> {
-        val quality = preferences.getString("preferred_quality", "720p")
+        val quality = preferences.getString("preferred_quality", "480p")
         if (quality != null) {
             val newList = mutableListOf<Video>()
             var preferred = 0
@@ -174,9 +161,9 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         val videoQualityPref = ListPreference(screen.context).apply {
             key = "preferred_quality"
             title = "Preferred quality"
-            entries = arrayOf("1080p", "720p", "480p", "240p")
-            entryValues = arrayOf("1080p", "720p", "480p", "240p")
-            setDefaultValue("1080p")
+            entries = arrayOf("480p")
+            entryValues = arrayOf("480p")
+            setDefaultValue("480p")
             summary = "%s"
 
             setOnPreferenceChangeListener { _, newValue ->
@@ -188,33 +175,6 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         }
         screen.addPreference(videoQualityPref)
     }
-
-    @Serializable
-    data class PornApiResponse(
-        var hls: Hls? = Hls(),
-        var mp4: Mp4? = Mp4(),
-        var thumb: String? = null,
-        var thumbnails: String? = null
-
-    )
-
-    @Serializable
-    data class Hls(
-        var all: String? = "",
-        @SerialName("1080p") var fhd: String? = "",
-        @SerialName("720p") var hd: String? = "",
-        @SerialName("480p") var sd: String? = "",
-        @SerialName("240p") var low: String? = ""
-
-    )
-
-    @Serializable
-    data class Mp4(
-        @SerialName("1080p") var fhd: String? = "",
-        @SerialName("720p") var hd: String? = "",
-        @SerialName("480p") var sd: String? = "",
-        @SerialName("240p") var low: String? = ""
-    )
 
     @Serializable
     data class VideoDetail(
