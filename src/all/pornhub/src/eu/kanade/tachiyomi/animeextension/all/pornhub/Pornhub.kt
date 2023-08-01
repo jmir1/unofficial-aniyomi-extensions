@@ -161,8 +161,8 @@ class Pornhub : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         val videoQualityPref = ListPreference(screen.context).apply {
             key = "preferred_quality"
             title = "Preferred quality"
-            entries = arrayOf("480p")
-            entryValues = arrayOf("480p")
+            entries = arrayOf("1080p", "720p", "480p", "240p")
+            entryValues = arrayOf("1080p", "720p", "480p", "240p")
             setDefaultValue("480p")
             summary = "%s"
 
