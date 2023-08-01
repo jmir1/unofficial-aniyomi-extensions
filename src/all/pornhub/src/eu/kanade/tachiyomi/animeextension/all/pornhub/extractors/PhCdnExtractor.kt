@@ -16,30 +16,26 @@ class PhCdnExtractor(private val client: OkHttpClient) {
             scriptPart.indexOf("var ra"),
             scriptPart.indexOf(";flashvars.mediaDefinitions.hls") + 1
         ).toString().split(";").toMutableList()
-        var toReplace = mutableListOf<Map<String, String>>()
-        // items to update
-        vars.forEachIndexed { index, s ->
-            if (s.contains("/*")) toReplace.add(mapOf("pos" to index.toString(), "itm" to removeComment(s)))
-        }
-        vars = updateList(vars, toReplace)
         vars = vars.map {
             it.replace("var ", "")
         }.toMutableList()
+
         var hls = String()
         var quality = String()
         // create a map of variable to value
-        var data = mutableMapOf<String, String>()
+        val data = mutableMapOf<String, String>()
         for (v in vars) {
             if (v.isEmpty()) {
                 continue
             }
             val index = v.indexOf("=")
             if (v.startsWith("hls")) {
-                quality = v.replace("hls", "").split("=")[0]
-                hls = v.subSequence(index + 1, v.length).toString()
+                val tmp = removeComment(v)
+                quality = tmp.replace("hls", "").split("=")[0]
+                hls = tmp.subSequence(index + 1, tmp.length).toString()
             } else {
                 val x = v.subSequence(0, index).toString()
-                val y = v.subSequence(index+1, v.length).toString().replace("\"", "").replace(" + ", "")
+                val y = v.subSequence(index + 1, v.length).toString().replace("\"", "").replace(" + ", "")
                 data.put(x, y)
             }
         }
@@ -57,16 +53,7 @@ class PhCdnExtractor(private val client: OkHttpClient) {
         return videoList
     }
 
-    fun updateList(list: MutableList<String>, replace: MutableList<Map<String, String>>): MutableList<String> {
-        for (item in replace) {
-            val pos = item["pos"]!!.toInt()
-            val itm = item["itm"]!!
-            list[pos] = itm
-        }
-        return list
-    }
-
-    fun removeComment(v: String): String {
+    private fun removeComment(v: String): String {
         return v.replace(Regex("""(\/\/[^\n]*|\/\*(.|[\r\n])*?\*\/)"""), "")
     }
 }
