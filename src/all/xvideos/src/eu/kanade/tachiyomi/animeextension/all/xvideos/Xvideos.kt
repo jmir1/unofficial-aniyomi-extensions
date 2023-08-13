@@ -75,12 +75,25 @@ class Xvideos : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         val sourcesJson = document.select("script:containsData(html5player.setVideoUrl)").toString()
         val lowQuality = sourcesJson.substringAfter("VideoUrlLow('").substringBefore("')")
         val hlsQuality = sourcesJson.substringAfter("setVideoHLS('").substringBefore("')")
-        val highQuality = sourcesJson.substringAfter("VideoUrlHigh('").substringBefore("')")
-        return listOf(
-            Video(lowQuality, "Low", lowQuality),
-            Video(hlsQuality, "HLS", hlsQuality),
-            Video(highQuality, "High", highQuality)
-        )
+        val highQuality = sourcesJson.substringAfter("VideoUrlHigh('").substringBefore("'")
+        
+        // Extract the HLS stream URL and parse it to get the available qualities
+        val hlsUrl = URL(hlsQuality)
+        val hlsConnection = hlsUrl.openConnection() as HttpURLConnection
+        val hlsStream = hlsConnection.inputStream.bufferedReader().use { it.readText() }
+        val hlsQualities = hlsStream.lines()
+            .filter { it.startsWith("#EXT-X-STREAM-INF") }
+            .map { it.substringAfter("NAME=\"").substringBefore("\"") }
+        
+        // Create a list of videos for each available quality
+        val videos = mutableListOf<Video>()
+        videos.add(Video(lowQuality, "Low", lowQuality))
+        for (quality in hlsQualities) {
+            videos.add(Video(hlsQuality, quality, hlsQuality))
+        }
+        videos.add(Video(highQuality, "High", highQuality))
+        
+        return videos
     }
 
     override fun videoListSelector() = throw Exception("not used")
@@ -106,6 +119,7 @@ class Xvideos : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         }
         return this
     }
+}
 
     override fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request {
         val tagFilter = filters.find{it is Tags} as Tags
