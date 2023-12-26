@@ -119,9 +119,7 @@ class Xnxx : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
             else -> popularAnimeRequest(page)
         }
     }
-    override fun searchAnimeFromElement(element: Element): SAnime {
-        return popularAnimeFromElement(element)
-    }
+    override fun searchAnimeFromElement(element: Element) = popularAnimeFromElement(element)
 
     override fun searchAnimeNextPageSelector(): String = popularAnimeNextPageSelector()
 
@@ -129,8 +127,8 @@ class Xnxx : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
     override fun animeDetailsParse(document: Document): SAnime {
         val anime = SAnime.create()
-        anime.title = document.select("#video-content-metadata > div.clear-infobar > strong").text()
-        anime.author = document.select("#video-content-metadata > div.clear-infobar > span > a").text()
+        anime.title = document.select("#video-content-metadata > div.clear-infobar strong").text()
+        anime.author = document.select("#video-content-metadata > div.clear-infobar span a").text()
         anime.description = document.select("#video-content-metadata > p").text().replace("\n", "")
         anime.genre = document.select("#video-content-metadata > div.metadata-row.video-tags > a").joinToString { it.text() }
         anime.status = SAnime.COMPLETED
