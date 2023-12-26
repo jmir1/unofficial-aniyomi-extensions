@@ -5,7 +5,7 @@ ext {
     extName = 'Xnxx'
     pkgNameSuffix = 'all.xnxx'
     extClass = '.Xnxx'
-    extVersionCode = 2
+    extVersionCode = 3
     libVersion = '13'
     containsNsfw = true
 }
