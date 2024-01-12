@@ -1,3 +1,5 @@
+# Someone else host their own repo, I've never really maintained this.
+
 # ![app icon](./.github/readme-images/app-icon.png)Unofficial Aniyomi Extensions
 
 This repository contains some unofficial extensions for the [Aniyomi](https://github.com/jmir1/aniyomi) app.
